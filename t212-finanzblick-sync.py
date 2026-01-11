@@ -2,10 +2,11 @@ import requests
 import pandas as pd
 from datetime import datetime
 import time
+import os
 
 # Configuration
-# Insert your Trading 212 API Key here (Settings -> API)
-API_KEY = "YOUR_API_KEY_HERE"
+# Insert your Trading 212 API Key as environment variable T212_API_KEY
+API_KEY = os.getenv("T212_API_KEY")
 
 # Base URL for the Trading 212 API
 BASE_URL = "https://live.trading212.com/api/v0"
@@ -84,8 +85,8 @@ def clean_number(value):
 # Main Logic
 
 def main():
-    if API_KEY == "YOUR_API_KEY_HERE":
-        print("ATTENTION: Please insert your API Key in the script first!")
+    if not API_KEY:
+        print("ATTENTION: Please set the T212_API_KEY environment variable!")
         return
 
     all_rows = []
