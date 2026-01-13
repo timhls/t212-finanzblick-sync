@@ -3,6 +3,10 @@ import pandas as pd
 from datetime import datetime
 import time
 import os
+import sys
+import getpass
+from pathlib import Path
+from pykeepass import PyKeePass
 
 # Configuration
 # Insert your Trading 212 API Key as environment variable T212_API_KEY
@@ -82,9 +86,180 @@ def clean_number(value):
     except:
         return 0.0
 
+# KeePass Integration
+
+def load_keepass_config(config_path=".keeenv"):
+    """
+    Load KeePass configuration from .keeenv file.
+    Returns a dict with 'database', 'keyfile' (optional), and 'env' mapping.
+    """
+    config = {"database": None, "keyfile": None, "env": {}}
+    
+    if not Path(config_path).exists():
+        return None
+    
+    current_section = None
+    with open(config_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            
+            if line.startswith('[') and line.endswith(']'):
+                current_section = line[1:-1]
+                continue
+            
+            if '=' not in line:
+                continue
+            
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            
+            if current_section == 'keepass':
+                if key == 'database':
+                    config['database'] = value
+                elif key == 'keyfile':
+                    config['keyfile'] = value
+            elif current_section == 'env':
+                config['env'][key] = value
+    
+    return config if config['database'] else None
+
+
+def parse_keepass_placeholder(placeholder):
+    """
+    Parse KeePass placeholder like ${"Entry Title".Password} or ${"Group/Entry"."API Key"}
+    Returns tuple of (entry_path, attribute_name)
+    """
+    if not placeholder.startswith('${') or not placeholder.endswith('}'):
+        return None, None
+    
+    inner = placeholder[2:-1].strip()
+    
+    # Split by last dot that's outside quotes
+    parts = []
+    current = ""
+    in_quotes = False
+    
+    for char in inner:
+        if char == '"':
+            in_quotes = not in_quotes
+        elif char == '.' and not in_quotes:
+            parts.append(current.strip(' "'))
+            current = ""
+            continue
+        current += char
+    
+    if current:
+        parts.append(current.strip(' "'))
+    
+    if len(parts) == 2:
+        return parts[0], parts[1]
+    
+    return None, None
+
+
+def load_keepass_secrets(config):
+    """
+    Load secrets from KeePass database and set them as environment variables.
+    """
+    if not config or not config['database']:
+        return False
+    
+    db_path = config['database']
+    keyfile_path = config.get('keyfile')
+    
+    if not Path(db_path).exists():
+        print(f"Error: KeePass database not found at {db_path}")
+        return False
+    
+    # Prompt for password
+    password = getpass.getpass(f"Enter KeePass password for {db_path}: ")
+    
+    try:
+        # Open KeePass database
+        kp = PyKeePass(db_path, password=password, keyfile=keyfile_path)
+        
+        # Process environment variable mappings
+        for env_var, placeholder in config['env'].items():
+            entry_path, attribute = parse_keepass_placeholder(placeholder)
+            
+            if not entry_path or not attribute:
+                print(f"Warning: Could not parse placeholder for {env_var}: {placeholder}")
+                continue
+            
+            # Handle group paths (e.g., "Group/Subgroup/Entry")
+            path_parts = entry_path.split('/')
+            entry_title = path_parts[-1]
+            group_path = path_parts[:-1] if len(path_parts) > 1 else None
+            
+            # Find the entry
+            if group_path:
+                # Navigate to the specific group
+                group = kp.root_group
+                for group_name in group_path:
+                    found_group = None
+                    for subgroup in group.subgroups:
+                        if subgroup.name == group_name:
+                            found_group = subgroup
+                            break
+                    if not found_group:
+                        print(f"Warning: Group '{group_name}' not found for {env_var}")
+                        break
+                    group = found_group
+                else:
+                    # Find entry in the found group
+                    entry = kp.find_entries(title=entry_title, group=group, first=True)
+            else:
+                # Find entry in root
+                entry = kp.find_entries(title=entry_title, first=True)
+            
+            if not entry:
+                print(f"Warning: Entry '{entry_title}' not found for {env_var}")
+                continue
+            
+            # Get the attribute value
+            value = None
+            if attribute.lower() == 'username':
+                value = entry.username
+            elif attribute.lower() == 'password':
+                value = entry.password
+            elif attribute.lower() == 'url':
+                value = entry.url
+            elif attribute.lower() == 'notes':
+                value = entry.notes
+            else:
+                # Custom attribute
+                value = entry.get_custom_property(attribute)
+            
+            if value:
+                os.environ[env_var] = value
+                print(f"Loaded {env_var} from KeePass")
+            else:
+                print(f"Warning: No value found for {env_var}.{attribute}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error loading KeePass database: {e}")
+        return False
+
+
 # Main Logic
 
 def main():
+    # Try to load secrets from KeePass if .keeenv exists
+    config = load_keepass_config(".keeenv")
+    if config:
+        print("Found .keeenv configuration, loading secrets from KeePass...")
+        if not load_keepass_secrets(config):
+            print("Failed to load secrets from KeePass, exiting.")
+            return
+        # Reload API_KEY after setting environment variables
+        global API_KEY
+        API_KEY = os.getenv("T212_API_KEY")
+    
     if not API_KEY:
         print("ATTENTION: Please set the T212_API_KEY environment variable!")
         return
