@@ -1,12 +1,25 @@
 # Trading 212 to Finanzblick Sync
 
-This script synchronizes your Trading 212 transactions with Finanzblick by fetching data from the Trading 212 API and generating a CSV file in the format required by Finanzblick.
+This application synchronizes your Trading 212 transactions with Finanzblick by fetching data from the Trading 212 API and generating a CSV file in the format required by Finanzblick.
 
 ## Features
 
-- Fetches orders (buy/sell), dividends, and cash transactions from Trading 212
-- Converts data to German CSV format (semicolon separator, comma decimal separator)
-- Secure credential management using KeePass integration
+- 🔄 Fetches orders (buy/sell), dividends, and cash transactions from Trading 212
+- 📊 Converts data to German CSV format (semicolon separator, comma decimal separator)
+- 🔐 Secure credential management using KeePass integration
+- 🏗️ Object-oriented architecture with clean separation of concerns
+- 📦 Modular design for easy maintenance and extension
+
+## Architecture
+
+The application is structured using object-oriented design patterns:
+
+- **`src/models/`** - Data models (Transaction, TransactionType)
+- **`src/keepass/`** - KeePass integration (config loader, secrets manager)
+- **`src/trading212/`** - Trading 212 API client and transaction factory
+- **`src/exporters/`** - Data exporters (Finanzblick CSV)
+- **`src/app.py`** - Main application orchestrator
+- **`main.py`** - Entry point
 
 ## Setup
 
@@ -39,13 +52,19 @@ T212_API_KEY = ${"Trading 212".Password}
 
 2. In your KeePass database, create an entry titled "Trading 212" and store your API key in the Password field (or customize the mapping in `.keeenv`).
 
-3. Run the script - it will prompt you for your KeePass password:
+3. Run the application - it will prompt you for your KeePass password:
+
+```bash
+python main.py
+```
+
+Or using the legacy script (deprecated):
 
 ```bash
 python t212-finanzblick-sync.py
 ```
 
-### Alternative: Environment Variable
+### Altmain Variable
 
 If you prefer not to use KeePass, you can set the API key as an environment variable:
 
