@@ -10,7 +10,7 @@ from tqdm import tqdm
 class Trading212APIClient:
     """Client for Trading 212 API"""
     
-    BASE_URL = "https://live.trading212.com/api/v0"
+    BASE_URL = "https://live.trading212.com"
     RATE_LIMIT_DELAY = 0.2  # seconds between requests
     DEFAULT_PAGE_SIZE = 50
     
@@ -35,7 +35,7 @@ class Trading212APIClient:
         Returns:
             List of order dictionaries
         """
-        return self._fetch_paginated("/equity/history/orders")
+        return self._fetch_paginated("/api/v0/equity/history/orders")
     
     def fetch_dividends(self) -> List[Dict]:
         """
@@ -44,7 +44,7 @@ class Trading212APIClient:
         Returns:
             List of dividend dictionaries
         """
-        return self._fetch_paginated("/history/dividends")
+        return self._fetch_paginated("/api/v0/history/dividends")
     
     def fetch_transactions(self) -> List[Dict]:
         """
@@ -53,7 +53,7 @@ class Trading212APIClient:
         Returns:
             List of transaction dictionaries
         """
-        return self._fetch_paginated("/history/transactions")
+        return self._fetch_paginated("/api/v0/history/transactions")
     
     def _fetch_paginated(self, endpoint: str) -> List[Dict]:
         """
@@ -73,8 +73,10 @@ class Trading212APIClient:
         with tqdm(unit="items") as pbar:
             while next_page_path:
                 try:
+                    # nextPagePath already includes /api/v0, so use BASE_URL instead
+                    url = f"{self.BASE_URL}{next_page_path}"
                     response = requests.get(
-                        f"{self.BASE_URL}{next_page_path}",
+                        url,
                         headers=self.headers
                     )
                     
