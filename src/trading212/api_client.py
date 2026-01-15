@@ -66,21 +66,16 @@ class Trading212APIClient:
             List of all items from all pages
         """
         items = []
-        cursor = None
+        next_page_path = f"{endpoint}?limit={self.DEFAULT_PAGE_SIZE}"
         
         print(f"Fetching data from: {endpoint} ...")
         
         with tqdm(unit="items") as pbar:
-            while True:
-                params = {"limit": self.DEFAULT_PAGE_SIZE}
-                if cursor:
-                    params["cursor"] = cursor
-                
+            while next_page_path:
                 try:
                     response = requests.get(
-                        f"{self.BASE_URL}{endpoint}",
-                        headers=self.headers,
-                        params=params
+                        f"{self.BASE_URL}{next_page_path}",
+                        headers=self.headers
                     )
                     
                     # Respect rate limiting
@@ -97,11 +92,8 @@ class Trading212APIClient:
                     pbar.update(len(current_items))
                     pbar.set_description(f"Fetched {len(items)} items")
                     
-                    # Check for next page cursor
-                    cursor = data.get("nextPagePath") or data.get("next")
-                    
-                    if not cursor:
-                        break
+                    # Get the full path for the next page (includes limit and cursor)
+                    next_page_path = data.get("nextPagePath")
                     
                 except Exception as e:
                     print(f"Critical error during request: {e}")
