@@ -15,7 +15,7 @@ This application synchronizes your Trading 212 transactions with Finanzblick by 
 The application is structured using object-oriented design patterns:
 
 - **`src/models/`** - Data models (Transaction, TransactionType)
-- **`src/keepass/`** - KeePass integration (config loader, secrets manager)
+- **`src/keepass/`** - KeePass integration for secure credential management
 - **`src/trading212/`** - Trading 212 API client and transaction factory
 - **`src/exporters/`** - Data exporters (Finanzblick CSV)
 - **`src/app.py`** - Main application orchestrator
@@ -35,22 +35,20 @@ or with pip:
 pip install -r requirements.txt
 ```
 
-### 2. Configure KeePass (Recommended)
+### 2. Configure KeePass
 
-The script supports loading your Trading 212 API key from a KeePass database for secure credential management.
+The application loads Trading 212 credentials from a KeePass database for secure credential management.
 
-1. Create a `.keeenv` file in the project root (you can copy `.keeenv.example`):
+1. Set the following environment variables:
 
-```ini
-[keepass]
-database = secrets.kdbx
-keyfile = 
-
-[env]
-T212_API_KEY = ${"Trading 212".Password}
+```bash
+export KEEPASS_DB_PATH="/path/to/your/database.kdbx"
+export KEEPASS_ENTRY_TITLE="Trading212"
 ```
 
-2. In your KeePass database, create an entry titled "Trading 212" and store your API key in the Password field (or customize the mapping in `.keeenv`).
+2. In your KeePass database, create an entry with the name specified in `KEEPASS_ENTRY_TITLE` and store your credentials:
+   - **Username field**: Your Trading 212 API key
+   - **Password field**: Your Trading 212 API secret
 
 3. Run the application - it will prompt you for your KeePass password:
 
@@ -58,55 +56,23 @@ T212_API_KEY = ${"Trading 212".Password}
 python main.py
 ```
 
-Or using the legacy script (deprecated):
+The application will:
+- Open the KeePass database at the specified path
+- Find the entry by name (supports group paths like `"Finance/Trading212"`)
+- Read the API key from the username field
+- Read the API secret from the password field
+- Create a Basic authentication header using base64 encoding
+
+### Example
+
+For a KeePass entry in a nested group:
 
 ```bash
-python t212-finanzblick-sync.py
-```
-
-### Altmain Variable
-
-If you prefer not to use KeePass, you can set the API key as an environment variable:
-
-```bash
-export T212_API_KEY="your-api-key-here"
-python t212-finanzblick-sync.py
-```
-
-## KeePass Configuration
-
-The `.keeenv` file uses the following format:
-
-- **[keepass] section**: Defines the KeePass database location
-  - `database`: Path to your `.kdbx` file
-  - `keyfile`: (optional) Path to key file if you use one
-
-- **[env] section**: Maps environment variables to KeePass entries
-  - Format: `ENV_VAR = ${"Entry Title".Attribute}`
-  - Standard attributes: `Username`, `Password`, `URL`, `Notes`
-  - Custom attributes are also supported (use quotes if they contain spaces)
-
-### Examples
-
-Store API key in Password field:
-```ini
-T212_API_KEY = ${"Trading 212".Password}
-```
-
-Store in a custom attribute:
-```ini
-T212_API_KEY = ${"Trading 212"."API Key"}
-```
-
-Use grouped entries:
-```ini
-T212_API_KEY = ${"Finance/Trading212/API".Password}
+export KEEPASS_DB_PATH="$HOME/secrets/passwords.kdbx"
+export KEEPASS_ENTRY_TITLE="Finance/Trading212/API"
+python main.py
 ```
 
 ## Output
 
 The script generates `finanzblick_import_trading212.csv` which can be imported directly into Finanzblick.
-
-## Credits
-
-KeePass integration inspired by [keeenv](https://github.com/scross01/keeenv)

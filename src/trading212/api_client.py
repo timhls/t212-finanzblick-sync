@@ -1,5 +1,6 @@
 """Trading 212 API client"""
 
+import base64
 import time
 from typing import List, Dict, Optional
 import requests
@@ -12,15 +13,19 @@ class Trading212APIClient:
     RATE_LIMIT_DELAY = 0.2  # seconds between requests
     DEFAULT_PAGE_SIZE = 50
     
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, api_secret: str):
         """
         Initialize Trading 212 API client.
         
         Args:
             api_key: Trading 212 API key
+            api_secret: Trading 212 API secret
         """
-        self.api_key = api_key
-        self.headers = {"Authorization": api_key}
+        # Create Basic auth header
+        credentials_string = f"{api_key}:{api_secret}"
+        encoded_credentials = base64.b64encode(credentials_string.encode('utf-8')).decode('utf-8')
+        auth_header = f"Basic {encoded_credentials}"
+        self.headers = {"Authorization": auth_header}
     
     def fetch_orders(self) -> List[Dict]:
         """

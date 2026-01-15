@@ -1,8 +1,7 @@
 """Main application orchestrator"""
 
-import os
 from typing import Optional
-from .keepass import KeePassConfigLoader, KeePassSecretsManager
+from .keepass import KeePassSecretsManager
 from .trading212 import Trading212APIClient, TransactionFactory
 from .exporters import FinanzblickCSVExporter
 
@@ -10,15 +9,11 @@ from .exporters import FinanzblickCSVExporter
 class Trading212SyncApp:
     """Main application for syncing Trading 212 to Finanzblick"""
     
-    def __init__(self, config_path: str = ".keeenv"):
+    def __init__(self):
         """
         Initialize the sync application.
-        
-        Args:
-            config_path: Path to .keeenv configuration file
         """
-        self.config_path = config_path
-        self.api_key: Optional[str] = None
+        self.credentials: Optional[tuple] = None
     
     def run(self) -> int:
         """
@@ -27,20 +22,18 @@ class Trading212SyncApp:
         Returns:
             Exit code (0 for success, 1 for failure)
         """
-        # Load KeePass secrets if available
-        if not self._load_secrets():
-            print("Failed to load secrets.")
-            return 1
+        # Load credentials from KeePass
+        manager = KeePassSecretsManager()
+        self.credentials = manager.get_credentials()
         
-        # Get API key from environment
-        self.api_key = os.getenv("T212_API_KEY")
-        if not self.api_key:
-            print("ATTENTION: Please set the T212_API_KEY environment variable!")
+        if not self.credentials:
+            print("Failed to load credentials from KeePass.")
             return 1
         
         # Fetch data from Trading 212
         print("\n=== Fetching data from Trading 212 ===")
-        client = Trading212APIClient(self.api_key)
+        api_key, api_secret = self.credentials
+        client = Trading212APIClient(api_key, api_secret)
         
         orders = client.fetch_orders()
         dividends = client.fetch_dividends()
@@ -64,21 +57,3 @@ class Trading212SyncApp:
         success = exporter.export(all_transactions)
         
         return 0 if success else 1
-    
-    def _load_secrets(self) -> bool:
-        """
-        Load secrets from KeePass if configuration exists.
-        
-        Returns:
-            True if secrets loaded or no config found, False if loading failed
-        """
-        loader = KeePassConfigLoader(self.config_path)
-        config = loader.load()
-        
-        if not config:
-            # No .keeenv file found, user can use environment variables
-            return True
-        
-        print("Found .keeenv configuration, loading secrets from KeePass...")
-        manager = KeePassSecretsManager(config)
-        return manager.load_secrets()
