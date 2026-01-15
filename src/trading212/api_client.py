@@ -4,6 +4,7 @@ import base64
 import time
 from typing import List, Dict, Optional
 import requests
+from tqdm import tqdm
 
 
 class Trading212APIClient:
@@ -69,38 +70,42 @@ class Trading212APIClient:
         
         print(f"Fetching data from: {endpoint} ...")
         
-        while True:
-            params = {"limit": self.DEFAULT_PAGE_SIZE}
-            if cursor:
-                params["cursor"] = cursor
-            
-            try:
-                response = requests.get(
-                    f"{self.BASE_URL}{endpoint}",
-                    headers=self.headers,
-                    params=params
-                )
+        with tqdm(unit="items") as pbar:
+            while True:
+                params = {"limit": self.DEFAULT_PAGE_SIZE}
+                if cursor:
+                    params["cursor"] = cursor
                 
-                # Respect rate limiting
-                time.sleep(self.RATE_LIMIT_DELAY)
-                
-                if response.status_code != 200:
-                    print(f"Error fetching data: {response.status_code} - {response.text}")
+                try:
+                    response = requests.get(
+                        f"{self.BASE_URL}{endpoint}",
+                        headers=self.headers,
+                        params=params
+                    )
+                    
+                    # Respect rate limiting
+                    time.sleep(self.RATE_LIMIT_DELAY)
+                    
+                    if response.status_code != 200:
+                        print(f"Error fetching data: {response.status_code} - {response.text}")
+                        break
+                    
+                    data = response.json()
+                    current_items = data.get("items", [])
+                    items.extend(current_items)
+                    
+                    pbar.update(len(current_items))
+                    pbar.set_description(f"Fetched {len(items)} items")
+                    
+                    # Check for next page cursor
+                    cursor = data.get("nextPagePath") or data.get("next")
+                    
+                    if not cursor:
+                        break
+                    
+                except Exception as e:
+                    print(f"Critical error during request: {e}")
                     break
-                
-                data = response.json()
-                current_items = data.get("items", [])
-                items.extend(current_items)
-                
-                # Check for next page cursor
-                cursor = data.get("nextPagePath") or data.get("next")
-                
-                if not cursor:
-                    break
-                
-            except Exception as e:
-                print(f"Critical error during request: {e}")
-                break
         
         print(f"-> {len(items)} entries found.")
         return items
