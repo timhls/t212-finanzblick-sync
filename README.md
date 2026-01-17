@@ -47,6 +47,7 @@ export KEEPASS_ENTRY_TITLE="Trading212"
 ```
 
 2. In your KeePass database, create an entry with the name specified in `KEEPASS_ENTRY_TITLE` and store your credentials:
+
    - **Username field**: Your Trading 212 API key
    - **Password field**: Your Trading 212 API secret
 
@@ -57,6 +58,7 @@ python main.py
 ```
 
 The application will:
+
 - Open the KeePass database at the specified path
 - Find the entry by name (supports group paths like `"Finance/Trading212"`)
 - Read the API key from the username field

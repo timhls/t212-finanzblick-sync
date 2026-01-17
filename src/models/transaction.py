@@ -8,6 +8,7 @@ from typing import Optional
 
 class TransactionType(Enum):
     """Types of transactions"""
+
     BUY = "buy"
     SELL = "sell"
     DIVIDEND = "dividend"
@@ -20,7 +21,7 @@ class TransactionType(Enum):
 @dataclass
 class Transaction:
     """Represents a financial transaction"""
-    
+
     date: datetime
     transaction_type: TransactionType
     amount: float
@@ -29,12 +30,12 @@ class Transaction:
     ticker: Optional[str] = None
     quantity: Optional[float] = None
     price: Optional[float] = None
-    
+
     @property
     def formatted_date(self) -> str:
         """Returns date in German format (DD.MM.YYYY)"""
         return self.date.strftime("%d.%m.%Y")
-    
+
     @property
     def booking_text(self) -> str:
         """Returns the German booking text based on transaction type"""
@@ -45,17 +46,17 @@ class Transaction:
             TransactionType.DEPOSIT: "Einlage",
             TransactionType.WITHDRAWAL: "Auszahlung / Kartennutzung",
             TransactionType.INTEREST: "Zinsen",
-            TransactionType.OTHER: "Sonstiges"
+            TransactionType.OTHER: "Sonstiges",
         }
         return mapping.get(self.transaction_type, "Sonstiges")
-    
+
     @property
     def signed_amount(self) -> float:
         """Returns amount with correct sign (negative for expenses)"""
         if self.transaction_type in [TransactionType.BUY, TransactionType.WITHDRAWAL]:
             return -abs(self.amount)
         return abs(self.amount)
-    
+
     def to_finanzblick_row(self) -> dict:
         """Converts transaction to Finanzblick CSV row format"""
         return {
@@ -67,5 +68,5 @@ class Transaction:
             "Buchungstext": self.booking_text,
             "Betrag": self.signed_amount,
             "IBAN": "",
-            "BIC": ""
+            "BIC": "",
         }

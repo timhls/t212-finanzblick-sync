@@ -2,6 +2,7 @@
 """Entry point for Trading 212 to Finanzblick sync"""
 
 import sys
+
 from src.app import Trading212SyncApp
 
 
