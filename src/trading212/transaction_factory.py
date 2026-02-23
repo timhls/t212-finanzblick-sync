@@ -10,7 +10,7 @@ class TransactionFactory:
     """Creates Transaction objects from Trading 212 API responses"""
 
     @staticmethod
-    def from_order(order: Dict) -> Transaction:
+    def from_order(order: Dict) -> Optional[Transaction]:
         """
         Create a Transaction from a Trading 212 order.
 
@@ -18,12 +18,15 @@ class TransactionFactory:
             order: Order dictionary from Trading 212 API
 
         Returns:
-            Transaction object
+            Transaction object or None if order is not filled
         """
-        date = TransactionFactory._parse_date(order.get("dateCreated"))
+        if order.get("status") != "FILLED":
+            return None
+
+        date = TransactionFactory._parse_date(order.get("date"))
         ticker = order.get("ticker", "Unknown")
-        quantity = float(order.get("filledQuantity", 0))
-        price = float(order.get("fillPrice", 0))
+        quantity = float(order.get("quantity", 0))
+        price = float(order.get("price", 0))
         direction = order.get("direction")  # BUY or SELL
 
         total_amount = quantity * price
@@ -145,15 +148,16 @@ class TransactionFactory:
 
         # Process orders (only FILLED ones)
         for order in orders:
-            if order.get("status") == "FILLED":
-                all_transactions.append(cls.from_order(order))
+            transaction = cls.from_order(order)
+            if transaction:
+                all_transactions.append(transaction)
 
         # Process dividends
         for dividend in dividends:
             all_transactions.append(cls.from_dividend(dividend))
 
         # Process cash transactions
-        for transaction in transactions:
-            all_transactions.append(cls.from_transaction(transaction))
+        for t in transactions:
+            all_transactions.append(cls.from_transaction(t))
 
         return all_transactions

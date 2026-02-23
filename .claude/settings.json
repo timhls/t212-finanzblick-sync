@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv help tree)",
+      "Bash(uv help format)",
+      "Bash(uv help tool)",
+      "Bash(uv help python)",
+      "Bash(uv help pip)",
+      "Bash(uv help venv)",
+      "Bash(uv help build)",
+      "Bash(uv help publish)",
+      "Bash(uv help cache)",
+      "Bash(uv help self)",
+      "Bash(uv help generate-shell-completion)",
+      "Bash(uv python pin /opt/homebrew/opt/python@3.14/bin/python3.14)",
+      "Bash(uv sync --dev --active)",
+      "Bash(uv pip list)",
+      "Bash(uv pip install -e \".[dev]\")",
+      "Bash(echo $PATH)",
+      "Bash(/Users/timohulsmann/Repos/t212-finanzblick-sync/.venv/bin/pytest)",
+      "Bash(git add .github/workflows/main.yml .python-version pyproject.toml src/app.py src/trading212/transaction_factory.py tests/exporters/test_finanzblick_exporter.py tests/trading212/test_transaction_factory.py uv.lock)",
+      "Bash(git commit -m \"fix\\(tests\\): resolve all failing tests and environment issues\" -m \"A comprehensive suite of fixes to resolve all outstanding test failures and address inconsistencies in the local development environment.:*)",
+      "Bash(git push origin main)",
+      "Bash(git add .)"
+    ]
+  }
+}
