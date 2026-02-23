@@ -1,20 +1,11 @@
 """Main application orchestrator"""
 
-from typing import Optional
-
 from .exporters import FinanzblickCSVExporter
-from .keepass import KeePassSecretsManager
 from .trading212 import Trading212APIClient, TransactionFactory
 
 
 class Trading212SyncApp:
     """Main application for syncing Trading 212 to Finanzblick"""
-
-    def __init__(self):
-        """
-        Initialize the sync application.
-        """
-        self.credentials: Optional[tuple] = None
 
     def run(self) -> int:
         """
@@ -23,18 +14,9 @@ class Trading212SyncApp:
         Returns:
             Exit code (0 for success, 1 for failure)
         """
-        # Load credentials from KeePass
-        manager = KeePassSecretsManager()
-        self.credentials = manager.get_credentials()
-
-        if not self.credentials:
-            print("Failed to load credentials from KeePass.")
-            return 1
-
         # Fetch data from Trading 212
         print("\n=== Fetching data from Trading 212 ===")
-        api_key, api_secret = self.credentials
-        client = Trading212APIClient(api_key, api_secret)
+        client = Trading212APIClient()
 
         orders = client.fetch_orders()
         dividends = client.fetch_dividends()

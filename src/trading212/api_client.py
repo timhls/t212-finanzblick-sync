@@ -1,6 +1,7 @@
 """Trading 212 API client"""
 
 import base64
+import os
 import time
 from typing import Dict, List
 
@@ -15,14 +16,19 @@ class Trading212APIClient:
     RATE_LIMIT_DELAY = 0.2  # seconds between requests
     DEFAULT_PAGE_SIZE = 50
 
-    def __init__(self, api_key: str, api_secret: str):
+    def __init__(self):
         """
         Initialize Trading 212 API client.
-
-        Args:
-            api_key: Trading 212 API key
-            api_secret: Trading 212 API secret
         """
+        api_key = os.getenv("TRADING212_API_KEY")
+        api_secret = os.getenv("TRADING212_API_SECRET")
+
+        if not api_key or not api_secret:
+            raise ValueError(
+                "TRADING212_API_KEY and TRADING212_API_SECRET "
+                "environment variables must be set"
+            )
+
         # Create Basic auth header
         credentials_string = f"{api_key}:{api_secret}"
         encoded_credentials = base64.b64encode(
